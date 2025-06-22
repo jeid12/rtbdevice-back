@@ -1,5 +1,6 @@
 # Use an official Node.js runtime as a base image
-FROM node:18-alpine
+FROM node:18
+
 
 # Create app directory
 WORKDIR /app
