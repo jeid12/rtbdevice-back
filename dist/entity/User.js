@@ -88,5 +88,9 @@ __decorate([
     __metadata("design:type", Date)
 ], User.prototype, "otpExpiresAt", void 0);
 exports.User = User = __decorate([
+    (0, typeorm_1.Index)('IDX_USER_EMAIL', ['email'], { unique: true }),
+    (0, typeorm_1.Index)('IDX_USER_PHONE', ['phone']),
+    (0, typeorm_1.Index)('IDX_USER_ROLE', ['role']),
+    (0, typeorm_1.Index)('IDX_USER_GENDER', ['gender']),
     (0, typeorm_1.Entity)()
 ], User);

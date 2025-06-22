@@ -38,6 +38,11 @@ exports.userService = {
         const valid = await bcrypt_1.default.compare(password, user.password);
         if (!valid)
             throw new Error('Invalid credentials');
+        // Check if password is the default and force change
+        const isDefault = await bcrypt_1.default.compare('Rtb@2025', user.password);
+        if (isDefault) {
+            return { mustChangePassword: true, message: 'You must change your password before logging in.' };
+        }
         // Generate and send OTP
         const otp = generateOtp();
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
@@ -60,5 +65,79 @@ exports.userService = {
         await userRepo.save(user);
         const token = jsonwebtoken_1.default.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1d' });
         return { token };
+    },
+    forgotPassword: async ({ email }) => {
+        const userRepo = data_source_1.AppDataSource.getRepository(User_1.User);
+        const user = await userRepo.findOne({ where: { email } });
+        if (!user)
+            throw new Error('User not found');
+        const otp = generateOtp();
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+        user.otp = otp;
+        user.otpExpiresAt = otpExpiresAt;
+        await userRepo.save(user);
+        await (0, emailService_1.sendOtpEmail)(user.email, otp);
+        return { message: 'OTP sent to your email' };
+    },
+    verifyResetOtp: async ({ email, otp }) => {
+        const userRepo = data_source_1.AppDataSource.getRepository(User_1.User);
+        const user = await userRepo.findOne({ where: { email } });
+        if (!user)
+            throw new Error('User not found');
+        if (!user.otp || !user.otpExpiresAt || user.otp !== otp || user.otpExpiresAt < new Date()) {
+            throw new Error('Invalid or expired OTP');
+        }
+        return { message: 'OTP verified. You can now reset your password.' };
+    },
+    resetPassword: async ({ email, otp, newPassword }) => {
+        const userRepo = data_source_1.AppDataSource.getRepository(User_1.User);
+        const user = await userRepo.findOne({ where: { email } });
+        if (!user)
+            throw new Error('User not found');
+        if (!user.otp || !user.otpExpiresAt || user.otp !== otp || user.otpExpiresAt < new Date()) {
+            throw new Error('Invalid or expired OTP');
+        }
+        user.password = await bcrypt_1.default.hash(newPassword, 10);
+        user.otp = undefined;
+        user.otpExpiresAt = undefined;
+        await userRepo.save(user);
+        return { message: 'Password reset successful.' };
+    },
+    getAll: async () => {
+        const userRepo = data_source_1.AppDataSource.getRepository(User_1.User);
+        return userRepo.find();
+    },
+    getById: async (id) => {
+        const userRepo = data_source_1.AppDataSource.getRepository(User_1.User);
+        const user = await userRepo.findOne({ where: { id } });
+        if (!user)
+            throw new Error('User not found');
+        return user;
+    },
+    update: async (id, data) => {
+        const userRepo = data_source_1.AppDataSource.getRepository(User_1.User);
+        const user = await userRepo.findOne({ where: { id } });
+        if (!user)
+            throw new Error('User not found');
+        Object.assign(user, data);
+        await userRepo.save(user);
+        return user;
+    },
+    delete: async (id) => {
+        const userRepo = data_source_1.AppDataSource.getRepository(User_1.User);
+        const user = await userRepo.findOne({ where: { id } });
+        if (!user)
+            throw new Error('User not found');
+        await userRepo.remove(user);
+        return { message: 'User deleted.' };
+    },
+    setActive: async (id, isActive) => {
+        const userRepo = data_source_1.AppDataSource.getRepository(User_1.User);
+        const user = await userRepo.findOne({ where: { id } });
+        if (!user)
+            throw new Error('User not found');
+        user.isActive = isActive;
+        await userRepo.save(user);
+        return user;
     },
 };
