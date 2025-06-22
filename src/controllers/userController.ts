@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { userService } from '../services/userService';
+import { tokenService } from '../services/tokenService';
+import jwt from 'jsonwebtoken';
 
 export const userController = {
   register: async (req: Request, res: Response) => {
@@ -29,9 +31,19 @@ export const userController = {
     }
   },
 
-  logout: async (req: Request, res: Response) => {
-    // For JWT, logout is handled on the client by deleting the token.
-    // Optionally, you can implement token blacklisting here.
-    res.status(200).json({ message: 'Logged out successfully.' });
+  logout: async (req: any, res: any) => {
+    // Get token from Authorization header
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(400).json({ error: 'No token provided.' });
+    }
+    try {
+      jwt.verify(token, process.env.JWT_SECRET!);
+      tokenService.blacklistToken(token);
+      res.status(200).json({ message: 'Logged out successfully.' });
+    } catch (err) {
+      res.status(401).json({ error: 'Invalid token.' });
+    }
   },
 };
