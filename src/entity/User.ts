@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -13,6 +13,10 @@ export enum Gender {
   FEMALE = 'Female',
 }
 
+@Index('IDX_USER_EMAIL', ['email'], { unique: true })
+@Index('IDX_USER_PHONE', ['phone'])
+@Index('IDX_USER_ROLE', ['role'])
+@Index('IDX_USER_GENDER', ['gender'])
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
