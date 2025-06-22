@@ -14,7 +14,7 @@ const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use('/api/users', userRoutes_1.default);
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 8080;
 data_source_1.AppDataSource.initialize()
     .then(() => {
     app.listen(PORT, () => {
