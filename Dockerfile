@@ -1,26 +1,23 @@
-# Use lightweight Node.js base image
-FROM node:20-alpine
+# Use an official Node.js runtime as a base image
+FROM node:18-alpine
 
-# Set working directory in container
-WORKDIR /src
+# Create app directory
+WORKDIR /app
 
-# Copy package.json and package-lock.json for caching dependencies
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Ensure tsc is executable (fixes "tsc: Permission denied" error on Alpine)
-RUN chmod +x ./node_modules/.bin/tsc
-
-# Copy all other project files (e.g., src/, tsconfig.json, etc.)
+# Copy the rest of the app files
 COPY . .
 
-# Compile TypeScript to JavaScript
+# Build TypeScript code
 RUN npm run build
 
-# Expose the port your app runs on
+# Expose the port your app runs on (default: 8080 for GCP)
 EXPOSE 8080
 
-# Start the server
-CMD ["node", "dist/index.js"]
+# Start the application
+CMD [ "npm", "start" ]
