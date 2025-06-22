@@ -46,4 +46,31 @@ export const userController = {
       res.status(401).json({ error: 'Invalid token.' });
     }
   },
+
+  forgotPassword: async (req: Request, res: Response) => {
+    try {
+      const result = await userService.forgotPassword(req.body);
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  },
+
+  verifyResetOtp: async (req: Request, res: Response) => {
+    try {
+      const result = await userService.verifyResetOtp(req.body);
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  },
+
+  resetPassword: async (req: Request, res: Response) => {
+    try {
+      const result = await userService.resetPassword(req.body);
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  },
 };

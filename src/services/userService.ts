@@ -33,6 +33,11 @@ export const userService = {
     if (!user) throw new Error('Invalid credentials');
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) throw new Error('Invalid credentials');
+    // Check if password is the default and force change
+    const isDefault = await bcrypt.compare('Rtb@2025', user.password);
+    if (isDefault) {
+      return { mustChangePassword: true, message: 'You must change your password before logging in.' };
+    }
     // Generate and send OTP
     const otp = generateOtp();
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
@@ -55,5 +60,42 @@ export const userService = {
     await userRepo.save(user);
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1d' });
     return { token };
+  },
+
+  forgotPassword: async ({ email }: { email: string }) => {
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { email } });
+    if (!user) throw new Error('User not found');
+    const otp = generateOtp();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    user.otp = otp;
+    user.otpExpiresAt = otpExpiresAt;
+    await userRepo.save(user);
+    await sendOtpEmail(user.email, otp);
+    return { message: 'OTP sent to your email' };
+  },
+
+  verifyResetOtp: async ({ email, otp }: { email: string; otp: string }) => {
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { email } });
+    if (!user) throw new Error('User not found');
+    if (!user.otp || !user.otpExpiresAt || user.otp !== otp || user.otpExpiresAt < new Date()) {
+      throw new Error('Invalid or expired OTP');
+    }
+    return { message: 'OTP verified. You can now reset your password.' };
+  },
+
+  resetPassword: async ({ email, otp, newPassword }: { email: string; otp: string; newPassword: string }) => {
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { email } });
+    if (!user) throw new Error('User not found');
+    if (!user.otp || !user.otpExpiresAt || user.otp !== otp || user.otpExpiresAt < new Date()) {
+      throw new Error('Invalid or expired OTP');
+    }
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.otp = undefined;
+    user.otpExpiresAt = undefined;
+    await userRepo.save(user);
+    return { message: 'Password reset successful.' };
   },
 };
