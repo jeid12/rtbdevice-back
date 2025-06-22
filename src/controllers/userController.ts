@@ -28,4 +28,10 @@ export const userController = {
       res.status(401).json({ error: error.message });
     }
   },
+
+  logout: async (req: Request, res: Response) => {
+    // For JWT, logout is handled on the client by deleting the token.
+    // Optionally, you can implement token blacklisting here.
+    res.status(200).json({ message: 'Logged out successfully.' });
+  },
 };
