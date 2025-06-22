@@ -98,4 +98,42 @@ export const userService = {
     await userRepo.save(user);
     return { message: 'Password reset successful.' };
   },
+
+  getAll: async () => {
+    const userRepo = AppDataSource.getRepository(User);
+    return userRepo.find();
+  },
+
+  getById: async (id: number) => {
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { id } });
+    if (!user) throw new Error('User not found');
+    return user;
+  },
+
+  update: async (id: number, data: Partial<User>) => {
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { id } });
+    if (!user) throw new Error('User not found');
+    Object.assign(user, data);
+    await userRepo.save(user);
+    return user;
+  },
+
+  delete: async (id: number) => {
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { id } });
+    if (!user) throw new Error('User not found');
+    await userRepo.remove(user);
+    return { message: 'User deleted.' };
+  },
+
+  setActive: async (id: number, isActive: boolean) => {
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { id } });
+    if (!user) throw new Error('User not found');
+    user.isActive = isActive;
+    await userRepo.save(user);
+    return user;
+  },
 };
