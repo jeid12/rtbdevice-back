@@ -1,6 +1,7 @@
 import 'reflect-metadata';
-import { Entity, PrimaryGeneratedColumn, Column, Index, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Index, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { User } from './User';
+import { Device } from './Device';
 
 @Index('IDX_SCHOOL_NAME', ['name'])
 @Index('IDX_SCHOOL_PROVINCE', ['province'])
@@ -29,6 +30,9 @@ export class School {
     @OneToOne(() => User, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'user_id' })
     user!: User;
+
+    @OneToMany(() => Device, (device) => device.school)
+    devices!: Device[];
 
     @CreateDateColumn()
     createdAt!: Date;
