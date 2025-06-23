@@ -15,6 +15,9 @@ export class School {
     name!: string;
 
     @Column()
+    code!: string;
+
+    @Column()
     province!: string;
 
     @Column()
@@ -23,7 +26,7 @@ export class School {
     @Column()
     sector!: string;
 
-    @OneToOne(() => User)
+    @OneToOne(() => User, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'user_id' })
     user!: User;
 
