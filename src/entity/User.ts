@@ -104,10 +104,14 @@ export class User {
   @Column({ type: 'date', nullable: true })
   dateOfBirth?: Date;
 
-  // For school users, link to their school
-  @ManyToOne(() => School, { nullable: true })
+  // For school users, link to their school (many users can belong to one school)
+  @ManyToOne(() => School, (school) => school.schoolUsers, { nullable: true })
   @JoinColumn({ name: 'school_id' })
   school?: School;
+
+  // For the main school user (one-to-one relationship)
+  @OneToOne(() => School, (school) => school.user, { nullable: true })
+  assignedSchool?: School;
 
   @CreateDateColumn()
   createdAt!: Date;
@@ -147,6 +151,10 @@ export class User {
   }
 
   get isSchoolUser(): boolean {
+    return this.role === UserRole.SCHOOL;
+  }
+
+  get canBeAssignedToSchool(): boolean {
     return this.role === UserRole.SCHOOL;
   }
 

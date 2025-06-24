@@ -88,12 +88,6 @@ export class School {
     establishedDate?: Date;
 
     @Column({ type: 'jsonb', nullable: true })
-    coordinates?: {
-        latitude: number;
-        longitude: number;
-    };
-
-    @Column({ type: 'jsonb', nullable: true })
     facilities?: {
         hasElectricity?: boolean;
         hasInternet?: boolean;
@@ -118,9 +112,12 @@ export class School {
     @Column({ type: 'text', nullable: true })
     inspectionNotes?: string;
 
-    @OneToOne(() => User, { onDelete: 'CASCADE' })
+    @OneToOne(() => User, (user) => user.assignedSchool, { 
+        onDelete: 'SET NULL',
+        eager: true 
+    })
     @JoinColumn({ name: 'user_id' })
-    user!: User;
+    user?: User;
 
     @OneToMany(() => Device, (device) => device.school)
     devices!: Device[];
