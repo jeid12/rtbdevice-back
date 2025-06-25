@@ -416,13 +416,13 @@ export class AutomationService {
             
             // Look for school with matching domain or similar name
             const matchingSchool = schools.find(school => 
-                school.email?.includes(emailDomain) || 
                 user.email.toLowerCase().includes(school.name.toLowerCase().replace(/\s+/g, ''))
             );
 
-            if (matchingSchool) {
-                await this.userRepository.update(user.id, {
-                    school: matchingSchool
+            if (matchingSchool && !matchingSchool.user) {
+                // Assign user as school manager if school doesn't have one
+                await this.schoolRepository.update(matchingSchool.id, {
+                    user: user
                 });
                 assignedCount++;
             }

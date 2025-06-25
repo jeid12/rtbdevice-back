@@ -66,51 +66,11 @@ export class School {
     })
     status!: SchoolStatus;
 
-    @Column({ type: 'text', nullable: true })
-    description?: string;
-
-    @Column({ nullable: true })
-    email?: string;
-
-    @Column({ nullable: true })
-    phone?: string;
-
-    @Column({ nullable: true })
-    website?: string;
-
     @Column({ type: 'int', nullable: true })
     studentCount?: number;
 
     @Column({ type: 'int', nullable: true })
     teacherCount?: number;
-
-    @Column({ type: 'date', nullable: true })
-    establishedDate?: Date;
-
-    @Column({ type: 'jsonb', nullable: true })
-    facilities?: {
-        hasElectricity?: boolean;
-        hasInternet?: boolean;
-        hasLibrary?: boolean;
-        hasLaboratory?: boolean;
-        computerLabCount?: number;
-    };
-
-    @Column({ type: 'jsonb', nullable: true })
-    contact?: {
-        headmasterName?: string;
-        headmasterPhone?: string;
-        headmasterEmail?: string;
-        itManagerName?: string;
-        itManagerPhone?: string;
-        itManagerEmail?: string;
-    };
-
-    @Column({ type: 'timestamp', nullable: true })
-    lastInspectionDate?: Date;
-
-    @Column({ type: 'text', nullable: true })
-    inspectionNotes?: string;
 
     @OneToOne(() => User, (user) => user.assignedSchool, { 
         onDelete: 'SET NULL',
@@ -122,8 +82,7 @@ export class School {
     @OneToMany(() => Device, (device) => device.school)
     devices!: Device[];
 
-    @OneToMany(() => User, (user) => user.school)
-    schoolUsers!: User[];
+
 
     @CreateDateColumn()
     createdAt!: Date;
@@ -174,17 +133,6 @@ export class School {
 
     get isActive(): boolean {
         return this.status === SchoolStatus.ACTIVE;
-    }
-
-    get schoolTypeDisplay(): string {
-        const typeMap = {
-            [SchoolType.PRIMARY]: 'Primary School',
-            [SchoolType.SECONDARY]: 'Secondary School',
-            [SchoolType.TVET]: 'TVET Institution',
-            [SchoolType.UNIVERSITY]: 'University',
-            [SchoolType.OTHER]: 'Other',
-        };
-        return typeMap[this.type];
     }
 
     get districtCode(): string {

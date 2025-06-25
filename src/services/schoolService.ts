@@ -49,13 +49,8 @@ export class SchoolService {
     village?: string;
     type?: string;
     status?: string;
-    description?: string;
-    email?: string;
-    phone?: string;
-    website?: string;
     studentCount?: number;
     teacherCount?: number;
-    establishedDate?: Date;
     userId?: number;
   }): Promise<School> {
     let user: User | undefined;
@@ -75,13 +70,8 @@ export class SchoolService {
       village: schoolData.village,
       type: schoolData.type as any,
       status: schoolData.status as any,
-      description: schoolData.description,
-      email: schoolData.email,
-      phone: schoolData.phone,
-      website: schoolData.website,
       studentCount: schoolData.studentCount,
       teacherCount: schoolData.teacherCount,
-      establishedDate: schoolData.establishedDate,
       user: user
     });
 
@@ -93,7 +83,7 @@ export class SchoolService {
    */
   async getAllSchools(): Promise<School[]> {
     return await this.schoolRepository.find({ 
-      relations: ['user', 'devices', 'schoolUsers'] 
+      relations: ['user', 'devices'] 
     });
   }
 
@@ -103,7 +93,7 @@ export class SchoolService {
   async getSchoolById(id: number): Promise<School | null> {
     return await this.schoolRepository.findOne({ 
       where: { id }, 
-      relations: ['user', 'devices', 'schoolUsers'] 
+      relations: ['user', 'devices'] 
     });
   }
 
@@ -120,13 +110,8 @@ export class SchoolService {
     village?: string;
     type?: string;
     status?: string;
-    description?: string;
-    email?: string;
-    phone?: string;
-    website?: string;
     studentCount?: number;
     teacherCount?: number;
-    establishedDate?: Date;
     userId?: number;
   }): Promise<School | null> {
     const school = await this.getSchoolById(id);

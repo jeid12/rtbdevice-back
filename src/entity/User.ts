@@ -104,10 +104,7 @@ export class User {
   @Column({ type: 'date', nullable: true })
   dateOfBirth?: Date;
 
-  // For school users, link to their school (many users can belong to one school)
-  @ManyToOne(() => School, (school) => school.schoolUsers, { nullable: true })
-  @JoinColumn({ name: 'school_id' })
-  school?: School;
+ 
 
   // For the main school user (one-to-one relationship)
   @OneToOne(() => School, (school) => school.user, { nullable: true })

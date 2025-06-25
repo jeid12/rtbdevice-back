@@ -49,12 +49,6 @@ export interface SchoolAnalytics {
     averageDevicesPerSchool: number;
     schoolsWithoutDevices: number;
     typeDistribution: Record<string, number>;
-    facilitiesAnalysis: {
-        withElectricity: number;
-        withInternet: number;
-        withLibrary: number;
-        withLaboratory: number;
-    };
     geographicDistribution: Record<string, Record<string, number>>;
     enrollmentAnalysis: {
         totalStudents: number;
@@ -198,13 +192,6 @@ export class AnalyticsService {
             return acc;
         }, {} as Record<string, number>);
 
-        const facilitiesAnalysis = {
-            withElectricity: schools.filter(s => s.facilities?.hasElectricity).length,
-            withInternet: schools.filter(s => s.facilities?.hasInternet).length,
-            withLibrary: schools.filter(s => s.facilities?.hasLibrary).length,
-            withLaboratory: schools.filter(s => s.facilities?.hasLaboratory).length,
-        };
-
         const geographicDistribution = schools.reduce((acc, school) => {
             if (!acc[school.province]) acc[school.province] = {};
             acc[school.province][school.district] = (acc[school.province][school.district] || 0) + 1;
@@ -229,7 +216,6 @@ export class AnalyticsService {
             averageDevicesPerSchool: Math.round(averageDevicesPerSchool * 100) / 100,
             schoolsWithoutDevices,
             typeDistribution,
-            facilitiesAnalysis,
             geographicDistribution,
             enrollmentAnalysis
         };
@@ -240,7 +226,7 @@ export class AnalyticsService {
      */
     async getUserAnalytics(): Promise<UserAnalytics> {
         const users = await this.userRepository.find({
-            relations: ['school']
+            relations: ['assignedSchool']
         });
 
         const roleDistribution = users.reduce((acc, user) => {
@@ -270,7 +256,7 @@ export class AnalyticsService {
         };
 
         const schoolUserDistribution = users.reduce((acc, user) => {
-            const schoolName = user.school?.name || 'No School';
+            const schoolName = user.assignedSchool?.name || 'No School';
             acc[schoolName] = (acc[schoolName] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);
@@ -496,7 +482,7 @@ export class AnalyticsService {
                 take: 5
             }),
             this.userRepository.find({
-                relations: ['school'],
+                relations: ['assignedSchool'],
                 order: { createdAt: 'DESC' },
                 take: 5
             })
@@ -986,11 +972,11 @@ export class AnalyticsService {
     private calculateTechnologyReadiness(school: School): number {
         let score = 0;
         
-        if (school.facilities?.hasElectricity) score += 25;
-        if (school.facilities?.hasInternet) score += 25;
-        if (school.facilities?.hasLibrary) score += 15;
-        if (school.facilities?.hasLaboratory) score += 15;
-        if ((school.facilities?.computerLabCount || 0) > 0) score += 20;
+        // Base score for having devices
+        const deviceCount = school.deviceCount || 0;
+        if (deviceCount > 0) score += 50;
+        if (deviceCount > 10) score += 25;
+        if (deviceCount > 50) score += 25;
         
         return score;
     }
@@ -1004,9 +990,7 @@ export class AnalyticsService {
         if (readiness < 70) {
             recommendations.push('Improve basic infrastructure for better technology adoption');
         }
-        if (!school.facilities?.hasInternet) {
-            recommendations.push('Priority: Establish internet connectivity');
-        }
+    
         if ((school.deviceCount || 0) === 0) {
             recommendations.push('Consider initial device allocation for this school');
         }
