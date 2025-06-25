@@ -4,6 +4,33 @@
 
 The RTB Device Management System is a comprehensive platform for managing devices, schools, and users in the Rwanda TVET Board ecosystem. It provides advanced features including automated device assignment, maintenance scheduling, analytics, and real-time monitoring.
 
+## Pagination
+
+**All listing endpoints support pagination with the following parameters:**
+
+- `page` (number, optional): Page number starting from 1 (default: 1)
+- `limit` (number, optional): Number of items per page (default: 10, max: 100)
+- `sortBy` (string, optional): Field to sort by (default: 'createdAt')
+- `sortOrder` (string, optional): Sort direction - 'ASC' or 'DESC' (default: 'DESC')
+
+**Paginated responses follow this structure:**
+
+```json
+{
+    "data": [...],           // Array of items
+    "pagination": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "totalItems": 50,
+        "totalPages": 5,
+        "hasNextPage": true,
+        "hasPreviousPage": false
+    }
+}
+```
+
+For detailed pagination documentation, see [PAGINATION_GUIDE.md](./PAGINATION_GUIDE.md).
+
 ## Features
 
 ### Core Features
