@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { DeviceService } from '../services/deviceService';
+import { PaginationQuery } from '../interfaces/pagination';
 
 export class DeviceController {
     private deviceService: DeviceService;
@@ -54,11 +55,24 @@ export class DeviceController {
      */
     getAllDevices = async (req: Request, res: Response): Promise<void> => {
         try {
-            const page = parseInt(req.query.page as string) || 1;
-            const limit = parseInt(req.query.limit as string) || 10;
             const schoolId = req.query.schoolId ? parseInt(req.query.schoolId as string) : undefined;
 
-            const result = await this.deviceService.getAllDevices(page, limit, schoolId);
+            // Parse pagination parameters
+            const paginationQuery: PaginationQuery = {
+                page: req.query.page as string,
+                limit: req.query.limit as string,
+                sortBy: req.query.sortBy as string,
+                sortOrder: req.query.sortOrder as 'ASC' | 'DESC'
+            };
+
+            const paginationOptions = {
+                page: paginationQuery.page ? parseInt(paginationQuery.page) : undefined,
+                limit: paginationQuery.limit ? parseInt(paginationQuery.limit) : undefined,
+                sortBy: paginationQuery.sortBy,
+                sortOrder: (paginationQuery.sortOrder as 'ASC' | 'DESC') || undefined
+            };
+
+            const result = await this.deviceService.getAllDevices(paginationOptions, schoolId);
 
             res.status(200).json({
                 success: true,

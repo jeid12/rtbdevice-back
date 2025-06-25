@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { schoolService, SchoolService } from '../services/schoolService';
+import { PaginationQuery } from '../interfaces/pagination';
 
 const schoolServiceInstance = new SchoolService();
 
@@ -20,18 +21,33 @@ export const schoolController = {
     }
   },
 
-  getAll: async (_req: Request, res: Response): Promise<void> => {
+  getAll: async (req: Request, res: Response): Promise<void> => {
     try {
-      const schools = await schoolServiceInstance.getAllSchools();
+      // Parse pagination parameters
+      const paginationQuery: PaginationQuery = {
+        page: req.query.page as string,
+        limit: req.query.limit as string,
+        sortBy: req.query.sortBy as string,
+        sortOrder: req.query.sortOrder as 'ASC' | 'DESC'
+      };
+
+      const paginationOptions = {
+        page: paginationQuery.page ? parseInt(paginationQuery.page) : undefined,
+        limit: paginationQuery.limit ? parseInt(paginationQuery.limit) : undefined,
+        sortBy: paginationQuery.sortBy,
+        sortOrder: (paginationQuery.sortOrder as 'ASC' | 'DESC') || undefined
+      };
+
+      const result = await schoolServiceInstance.getAllSchools(paginationOptions);
       res.status(200).json({
         success: true,
-        data: schools,
-        total: schools.length
+        data: result.data,
+        pagination: result.pagination
       });
     } catch (error: any) {
-      res.status(400).json({ 
+      res.status(500).json({
         success: false,
-        error: error.message 
+        error: error.message
       });
     }
   },

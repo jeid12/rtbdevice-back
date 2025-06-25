@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { userService } from '../services/userService';
 import { tokenService } from '../services/tokenService';
+import { PaginationQuery } from '../interfaces/pagination';
 import jwt from 'jsonwebtoken';
 
 export const userController = {
@@ -74,10 +75,25 @@ export const userController = {
     }
   },
 
-  getAll: async (_req: Request, res: Response) => {
+  getAll: async (req: Request, res: Response) => {
     try {
-      const users = await userService.getAll();
-      res.status(200).json(users);
+      // Parse pagination parameters
+      const paginationQuery: PaginationQuery = {
+        page: req.query.page as string,
+        limit: req.query.limit as string,
+        sortBy: req.query.sortBy as string,
+        sortOrder: req.query.sortOrder as 'ASC' | 'DESC'
+      };
+
+      const paginationOptions = {
+        page: paginationQuery.page ? parseInt(paginationQuery.page) : undefined,
+        limit: paginationQuery.limit ? parseInt(paginationQuery.limit) : undefined,
+        sortBy: paginationQuery.sortBy,
+        sortOrder: (paginationQuery.sortOrder as 'ASC' | 'DESC') || undefined
+      };
+
+      const result = await userService.getAll(paginationOptions);
+      res.status(200).json(result);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

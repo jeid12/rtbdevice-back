@@ -3,6 +3,7 @@ import { User } from '../entity/User';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { sendOtpEmail } from './emailService';
+import { PaginationOptions, PaginatedResponse, validatePaginationOptions, createPaginatedResponse } from '../interfaces/pagination';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
@@ -99,9 +100,26 @@ export const userService = {
     return { message: 'Password reset successful.' };
   },
 
-  getAll: async () => {
+  getAll: async (paginationOptions?: PaginationOptions): Promise<PaginatedResponse<User>> => {
     const userRepo = AppDataSource.getRepository(User);
-    return userRepo.find();
+    const validatedPagination = validatePaginationOptions(paginationOptions || {});
+    const { page, limit, sortBy, sortOrder } = validatedPagination;
+
+    const queryBuilder = userRepo
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.school', 'school');
+
+    // Get total count before applying pagination
+    const total = await queryBuilder.getCount();
+
+    // Apply sorting and pagination
+    const results = await queryBuilder
+      .orderBy(`user.${sortBy}`, sortOrder)
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    return createPaginatedResponse(results, total, page, limit);
   },
 
   getById: async (id: number) => {

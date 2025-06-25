@@ -4,6 +4,7 @@ import { Application, ApplicationType, ApplicationStatus, ApplicationPriority, A
 import { School } from '../entity/School';
 import { Device } from '../entity/Device';
 import { sendNewApplicationNotification, sendMaintenanceRequestNotification, sendApplicationStatusChangeNotification } from './emailService';
+import { PaginationOptions, PaginatedResponse, validatePaginationOptions, createPaginatedResponse } from '../interfaces/pagination';
 
 export interface CreateNewDeviceApplicationData {
     type: ApplicationType.NEW_DEVICE_REQUEST;
@@ -51,6 +52,7 @@ export interface ApplicationSearchFilters {
     dateFrom?: Date;
     dateTo?: Date;
     isOverdue?: boolean;
+    pagination?: PaginationOptions;
 }
 
 class ApplicationService {
@@ -157,7 +159,10 @@ class ApplicationService {
         });
     }
 
-    async getAllApplications(filters?: ApplicationSearchFilters): Promise<Application[]> {
+    async getAllApplications(filters?: ApplicationSearchFilters): Promise<PaginatedResponse<Application>> {
+        const validatedPagination = validatePaginationOptions(filters?.pagination || {});
+        const { page, limit, sortBy, sortOrder } = validatedPagination;
+
         const queryBuilder = this.applicationRepository
             .createQueryBuilder('application')
             .leftJoinAndSelect('application.school', 'school')
@@ -199,17 +204,41 @@ class ApplicationService {
                 .andWhere('application.status != :completed', { completed: ApplicationStatus.COMPLETED });
         }
 
-        return await queryBuilder
-            .orderBy('application.createdAt', 'DESC')
+        // Get total count before applying pagination
+        const total = await queryBuilder.getCount();
+
+        // Apply sorting and pagination
+        const results = await queryBuilder
+            .orderBy(`application.${sortBy}`, sortOrder)
+            .skip((page - 1) * limit)
+            .take(limit)
             .getMany();
+
+        return createPaginatedResponse(results, total, page, limit);
     }
 
-    async getApplicationsBySchool(schoolId: number): Promise<Application[]> {
-        return await this.applicationRepository.find({
-            where: { school: { id: schoolId } },
-            relations: ['school', 'deviceIssues', 'deviceIssues.device'],
-            order: { createdAt: 'DESC' },
-        });
+    async getApplicationsBySchool(schoolId: number, paginationOptions?: PaginationOptions): Promise<PaginatedResponse<Application>> {
+        const validatedPagination = validatePaginationOptions(paginationOptions || {});
+        const { page, limit, sortBy, sortOrder } = validatedPagination;
+
+        const queryBuilder = this.applicationRepository
+            .createQueryBuilder('application')
+            .leftJoinAndSelect('application.school', 'school')
+            .leftJoinAndSelect('application.deviceIssues', 'deviceIssues')
+            .leftJoinAndSelect('deviceIssues.device', 'device')
+            .where('application.school.id = :schoolId', { schoolId });
+
+        // Get total count before applying pagination
+        const total = await queryBuilder.getCount();
+
+        // Apply sorting and pagination
+        const results = await queryBuilder
+            .orderBy(`application.${sortBy}`, sortOrder)
+            .skip((page - 1) * limit)
+            .take(limit)
+            .getMany();
+
+        return createPaginatedResponse(results, total, page, limit);
     }
 
     async updateApplication(id: number, data: UpdateApplicationData): Promise<Application | null> {

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { applicationService, ApplicationSearchFilters } from '../services/applicationService';
 import { ApplicationType, ApplicationStatus, ApplicationPriority } from '../entity/Application';
+import { PaginationQuery } from '../interfaces/pagination';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -155,8 +156,23 @@ export class ApplicationController {
                 filters.isOverdue = true;
             }
 
-            const applications = await applicationService.getAllApplications(filters);
-            res.json(applications);
+            // Parse pagination parameters
+            const paginationQuery: PaginationQuery = {
+                page: req.query.page as string,
+                limit: req.query.limit as string,
+                sortBy: req.query.sortBy as string,
+                sortOrder: req.query.sortOrder as 'ASC' | 'DESC'
+            };
+
+            filters.pagination = {
+                page: paginationQuery.page ? parseInt(paginationQuery.page) : undefined,
+                limit: paginationQuery.limit ? parseInt(paginationQuery.limit) : undefined,
+                sortBy: paginationQuery.sortBy,
+                sortOrder: (paginationQuery.sortOrder as 'ASC' | 'DESC') || undefined
+            };
+
+            const result = await applicationService.getAllApplications(filters);
+            res.json(result);
         } catch (error) {
             console.error('Error fetching applications:', error);
             res.status(500).json({ error: 'Internal server error' });
@@ -192,8 +208,23 @@ export class ApplicationController {
                 return;
             }
 
-            const applications = await applicationService.getApplicationsBySchool(schoolId);
-            res.json(applications);
+            // Parse pagination parameters
+            const paginationQuery: PaginationQuery = {
+                page: req.query.page as string,
+                limit: req.query.limit as string,
+                sortBy: req.query.sortBy as string,
+                sortOrder: req.query.sortOrder as 'ASC' | 'DESC'
+            };
+
+            const paginationOptions = {
+                page: paginationQuery.page ? parseInt(paginationQuery.page) : undefined,
+                limit: paginationQuery.limit ? parseInt(paginationQuery.limit) : undefined,
+                sortBy: paginationQuery.sortBy,
+                sortOrder: (paginationQuery.sortOrder as 'ASC' | 'DESC') || undefined
+            };
+
+            const result = await applicationService.getApplicationsBySchool(schoolId, paginationOptions);
+            res.json(result);
         } catch (error) {
             console.error('Error fetching school applications:', error);
             res.status(500).json({ error: 'Internal server error' });

@@ -131,8 +131,8 @@ export class DeviceBulkController {
             if (schoolId) {
                 devices = await this.deviceService.getDevicesBySchool(schoolId);
             } else {
-                const result = await this.deviceService.getAllDevices(1, 1000); // Get up to 1000 devices
-                devices = result.devices;
+                const result = await this.deviceService.getAllDevices({ page: 1, limit: 1000 }); // Get up to 1000 devices
+                devices = result.data;
             }
 
             // Transform devices for Excel export

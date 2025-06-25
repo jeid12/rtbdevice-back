@@ -2,6 +2,7 @@ import { Repository } from 'typeorm';
 import { Device, DeviceCategory } from '../entity/Device';
 import { School } from '../entity/School';
 import { AppDataSource } from '../data-source';
+import { PaginationOptions, PaginatedResponse, validatePaginationOptions, createPaginatedResponse } from '../interfaces/pagination';
 
 export class DeviceService {
     private deviceRepository: Repository<Device>;
@@ -164,12 +165,10 @@ export class DeviceService {
     /**
      * Get all devices with pagination
      */
-    async getAllDevices(page: number = 1, limit: number = 10, schoolId?: number): Promise<{
-        devices: Device[];
-        total: number;
-        page: number;
-        totalPages: number;
-    }> {
+    async getAllDevices(paginationOptions?: PaginationOptions, schoolId?: number): Promise<PaginatedResponse<Device>> {
+        const validatedPagination = validatePaginationOptions(paginationOptions || {});
+        const { page, limit, sortBy, sortOrder } = validatedPagination;
+
         const queryBuilder = this.deviceRepository
             .createQueryBuilder('device')
             .leftJoinAndSelect('device.school', 'school');
@@ -182,15 +181,10 @@ export class DeviceService {
         const devices = await queryBuilder
             .skip((page - 1) * limit)
             .take(limit)
-            .orderBy('device.createdAt', 'DESC')
+            .orderBy(`device.${sortBy}`, sortOrder)
             .getMany();
 
-        return {
-            devices,
-            total,
-            page,
-            totalPages: Math.ceil(total / limit)
-        };
+        return createPaginatedResponse(devices, total, page, limit);
     }
 
     /**

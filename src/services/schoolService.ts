@@ -2,6 +2,7 @@ import { AppDataSource } from '../data-source';
 import { School } from '../entity/School';
 import { User, UserRole } from '../entity/User';
 import { Repository } from 'typeorm';
+import { PaginationOptions, PaginatedResponse, validatePaginationOptions, createPaginatedResponse } from '../interfaces/pagination';
 
 export class SchoolService {
   private schoolRepository: Repository<School>;
@@ -81,10 +82,26 @@ export class SchoolService {
   /**
    * Get all schools with their assigned users
    */
-  async getAllSchools(): Promise<School[]> {
-    return await this.schoolRepository.find({ 
-      relations: ['user', 'devices'] 
-    });
+  async getAllSchools(paginationOptions?: PaginationOptions): Promise<PaginatedResponse<School>> {
+    const validatedPagination = validatePaginationOptions(paginationOptions || {});
+    const { page, limit, sortBy, sortOrder } = validatedPagination;
+
+    const queryBuilder = this.schoolRepository
+      .createQueryBuilder('school')
+      .leftJoinAndSelect('school.user', 'user')
+      .leftJoinAndSelect('school.devices', 'devices');
+
+    // Get total count before applying pagination
+    const total = await queryBuilder.getCount();
+
+    // Apply sorting and pagination
+    const results = await queryBuilder
+      .orderBy(`school.${sortBy}`, sortOrder)
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    return createPaginatedResponse(results, total, page, limit);
   }
 
   /**

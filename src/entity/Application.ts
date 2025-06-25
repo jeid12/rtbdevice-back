@@ -35,35 +35,6 @@ export enum ApplicationPriority {
     URGENT = 'urgent',
 }
 
-@Entity()
-export class ApplicationDeviceIssue {
-    @PrimaryGeneratedColumn()
-    id!: number;
-
-    @ManyToOne(() => Application, (application) => application.deviceIssues, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'application_id' })
-    application!: Application;
-
-    @ManyToOne(() => Device, { eager: true })
-    @JoinColumn({ name: 'device_id' })
-    device!: Device;
-
-    @Column({ type: 'text' })
-    problemDescription!: string;
-
-    @Column({ type: 'text', nullable: true })
-    actionTaken?: string;
-
-    @Column({ type: 'timestamp', nullable: true })
-    resolvedAt?: Date;
-
-    @CreateDateColumn()
-    createdAt!: Date;
-
-    @UpdateDateColumn()
-    updatedAt!: Date;
-}
-
 @Index('IDX_APPLICATION_TYPE', ['type'])
 @Index('IDX_APPLICATION_STATUS', ['status'])
 @Index('IDX_APPLICATION_PRIORITY', ['priority'])
@@ -119,7 +90,7 @@ export class Application {
     applicationLetterPath?: string; // Path to uploaded PDF
 
     // For maintenance requests
-    @OneToMany(() => ApplicationDeviceIssue, (issue) => issue.application, { 
+    @OneToMany('ApplicationDeviceIssue', (issue: any) => issue.application, { 
         cascade: true, 
         eager: true 
     })
@@ -239,4 +210,33 @@ export class Application {
                 return this.priority;
         }
     }
+}
+
+@Entity()
+export class ApplicationDeviceIssue {
+    @PrimaryGeneratedColumn()
+    id!: number;
+
+    @ManyToOne('Application', (application: any) => application.deviceIssues, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'application_id' })
+    application!: Application;
+
+    @ManyToOne(() => Device, { eager: true })
+    @JoinColumn({ name: 'device_id' })
+    device!: Device;
+
+    @Column({ type: 'text' })
+    problemDescription!: string;
+
+    @Column({ type: 'text', nullable: true })
+    actionTaken?: string;
+
+    @Column({ type: 'timestamp', nullable: true })
+    resolvedAt?: Date;
+
+    @CreateDateColumn()
+    createdAt!: Date;
+
+    @UpdateDateColumn()
+    updatedAt!: Date;
 }
