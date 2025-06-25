@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { Device } from '../entity/Device';
 import { School } from '../entity/School';
+import { Application } from '../entity/Application';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -379,6 +380,234 @@ RTB Device Management System`,
       </div>
     `
   };
+};
+
+export const sendNewApplicationNotification = async (application: Application): Promise<void> => {
+  const recipients = [process.env.ADMIN_EMAIL].filter((email): email is string => !!email);
+  if (recipients.length === 0) return;
+
+  const subject = `New ${application.type === 'new_device_request' ? 'Device Request' : 'Maintenance Request'} - ${application.title}`;
+  
+  await transporter.sendMail({
+    from: process.env.GMAIL_USER,
+    to: recipients,
+    subject,
+    text: `
+A new application has been submitted:
+
+Type: ${application.type === 'new_device_request' ? 'New Device Request' : 'Maintenance Request'}
+Title: ${application.title}
+School: ${application.school.name}
+Priority: ${application.priority}
+Description: ${application.description}
+
+${application.isNewDeviceRequest ? `
+Requested Device Count: ${application.requestedDeviceCount}
+Requested Device Type: ${application.requestedDeviceType}
+Justification: ${application.justification}
+` : `
+Affected Devices: ${application.affectedDeviceCount}
+`}
+
+Please review and take appropriate action.
+
+Best regards,
+RTB Device Management System`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
+        <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <div style="background-color: #007bff; padding: 20px; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+            <h2 style="color: #ffffff; margin: 0;">New Application Submitted</h2>
+          </div>
+          <div style="padding: 30px;">
+            <p><strong>A new application has been submitted:</strong></p>
+            
+            <table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+              <tr><td><strong>Type</strong></td><td>${application.type === 'new_device_request' ? 'New Device Request' : 'Maintenance Request'}</td></tr>
+              <tr><td><strong>Title</strong></td><td>${application.title}</td></tr>
+              <tr><td><strong>School</strong></td><td>${application.school.name}</td></tr>
+              <tr><td><strong>Priority</strong></td><td>${application.priorityDisplayName}</td></tr>
+              <tr><td><strong>Submitted</strong></td><td>${application.createdAt.toLocaleDateString()}</td></tr>
+            </table>
+
+            <p><strong>Description:</strong></p>
+            <p style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #007bff;">${application.description}</p>
+
+            ${application.isNewDeviceRequest ? `
+            <p><strong>Device Request Details:</strong></p>
+            <ul>
+              <li>Requested Count: ${application.requestedDeviceCount}</li>
+              <li>Device Type: ${application.requestedDeviceType}</li>
+              <li>Application Letter: ${application.hasApplicationLetter ? 'Uploaded' : 'Not provided'}</li>
+            </ul>
+            <p><strong>Justification:</strong></p>
+            <p style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #28a745;">${application.justification}</p>
+            ` : `
+            <p><strong>Maintenance Request Details:</strong></p>
+            <p>Affected Devices: ${application.affectedDeviceCount}</p>
+            `}
+            
+            <p>Please review and take appropriate action through the RTB Device Management System.</p>
+            
+            <p>Best regards,<br><strong>RTB Device Management System</strong></p>
+          </div>
+          <div style="background-color: #f1f1f1; text-align: center; padding: 15px; font-size: 12px; color: #777; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+            © ${new Date().getFullYear()} Rwanda TVET Board – All rights reserved.
+          </div>
+        </div>
+      </div>
+    `
+  });
+};
+
+export const sendMaintenanceRequestNotification = async (application: Application): Promise<void> => {
+  const recipients = [process.env.ADMIN_EMAIL].filter((email): email is string => !!email);
+  if (recipients.length === 0) return;
+
+  const deviceList = application.deviceIssues.map(issue => 
+    `- ${issue.device.name_tag} (${issue.device.model}): ${issue.problemDescription}`
+  ).join('\n');
+
+  await transporter.sendMail({
+    from: process.env.GMAIL_USER,
+    to: recipients,
+    subject: `Maintenance Request - ${application.title}`,
+    text: `
+A new maintenance request has been submitted:
+
+Title: ${application.title}
+School: ${application.school.name}
+Priority: ${application.priority}
+Description: ${application.description}
+
+Affected Devices:
+${deviceList}
+
+Please review and assign a technician.
+
+Best regards,
+RTB Device Management System`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
+        <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <div style="background-color: #ffc107; padding: 20px; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+            <h2 style="color: #000; margin: 0;">Maintenance Request</h2>
+          </div>
+          <div style="padding: 30px;">
+            <p><strong>A new maintenance request has been submitted:</strong></p>
+            
+            <table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+              <tr><td><strong>Title</strong></td><td>${application.title}</td></tr>
+              <tr><td><strong>School</strong></td><td>${application.school.name}</td></tr>
+              <tr><td><strong>Priority</strong></td><td>${application.priorityDisplayName}</td></tr>
+              <tr><td><strong>Submitted</strong></td><td>${application.createdAt.toLocaleDateString()}</td></tr>
+              <tr><td><strong>Affected Devices</strong></td><td>${application.affectedDeviceCount}</td></tr>
+            </table>
+
+            <p><strong>Description:</strong></p>
+            <p style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #ffc107;">${application.description}</p>
+
+            <p><strong>Device Issues:</strong></p>
+            <ul>
+              ${application.deviceIssues.map(issue => 
+                `<li><strong>${issue.device.name_tag}</strong> (${issue.device.model}): ${issue.problemDescription}</li>`
+              ).join('')}
+            </ul>
+            
+            <p>Please review and assign a technician through the RTB Device Management System.</p>
+            
+            <p>Best regards,<br><strong>RTB Device Management System</strong></p>
+          </div>
+          <div style="background-color: #f1f1f1; text-align: center; padding: 15px; font-size: 12px; color: #777; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+            © ${new Date().getFullYear()} Rwanda TVET Board – All rights reserved.
+          </div>
+        </div>
+      </div>
+    `
+  });
+};
+
+export const sendApplicationStatusChangeNotification = async (application: Application, previousStatus: string): Promise<void> => {
+  if (!application.school.user?.email) return;
+
+  const statusColor: Record<string, string> = {
+    approved: '#28a745',
+    rejected: '#dc3545',
+    in_progress: '#007bff',
+    completed: '#28a745',
+    pending: '#6c757d',
+    under_review: '#17a2b8',
+    cancelled: '#6c757d'
+  };
+  
+  const color = statusColor[application.status] || '#6c757d';
+
+  await transporter.sendMail({
+    from: process.env.GMAIL_USER,
+    to: application.school.user.email,
+    subject: `Application Status Update - ${application.title}`,
+    text: `
+Dear ${application.school.user.fullName},
+
+Your application "${application.title}" status has been updated:
+
+Previous Status: ${previousStatus}
+New Status: ${application.status}
+
+${application.status === 'approved' ? `
+Estimated Cost: ${application.estimatedCost ? `${application.estimatedCost} RWF` : 'To be determined'}
+Estimated Completion: ${application.estimatedCompletionDate ? application.estimatedCompletionDate.toLocaleDateString() : 'To be determined'}
+` : ''}
+
+${application.status === 'rejected' ? `
+Rejection Reason: ${application.rejectionReason}
+` : ''}
+
+${application.adminNotes ? `
+Admin Notes: ${application.adminNotes}
+` : ''}
+
+Best regards,
+RTB Device Management System`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
+        <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <div style="background-color: ${color}; padding: 20px; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+            <h2 style="color: #ffffff; margin: 0;">Application Status Update</h2>
+          </div>
+          <div style="padding: 30px;">
+            <p>Dear <strong>${application.school.user.fullName}</strong>,</p>
+            
+            <p>Your application "<strong>${application.title}</strong>" status has been updated:</p>
+            
+            <table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+              <tr><td><strong>Previous Status</strong></td><td>${previousStatus}</td></tr>
+              <tr><td><strong>New Status</strong></td><td style="color: ${color}; font-weight: bold;">${application.statusDisplayName}</td></tr>
+              ${application.estimatedCost ? `<tr><td><strong>Estimated Cost</strong></td><td>${application.estimatedCost} RWF</td></tr>` : ''}
+              ${application.estimatedCompletionDate ? `<tr><td><strong>Estimated Completion</strong></td><td>${application.estimatedCompletionDate.toLocaleDateString()}</td></tr>` : ''}
+            </table>
+
+            ${application.rejectionReason ? `
+            <p><strong>Rejection Reason:</strong></p>
+            <p style="background-color: #f8d7da; padding: 15px; border-left: 4px solid #dc3545;">${application.rejectionReason}</p>
+            ` : ''}
+
+            ${application.adminNotes ? `
+            <p><strong>Admin Notes:</strong></p>
+            <p style="background-color: #d1ecf1; padding: 15px; border-left: 4px solid #17a2b8;">${application.adminNotes}</p>
+            ` : ''}
+            
+            <p>You can track your application progress through the RTB Device Management System.</p>
+            
+            <p>Best regards,<br><strong>RTB Device Management System</strong></p>
+          </div>
+          <div style="background-color: #f1f1f1; text-align: center; padding: 15px; font-size: 12px; color: #777; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+            © ${new Date().getFullYear()} Rwanda TVET Board – All rights reserved.
+          </div>
+        </div>
+      </div>
+    `
+  });
 };
 
 

@@ -10,6 +10,7 @@ import deviceBulkRoutes from './routes/deviceBulkRoutes';
 import searchRoutes from './routes/searchRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import automationRoutes from './routes/automationRoutes';
+import applicationRoutes from './routes/applicationRoutes';
 import dotenv from 'dotenv';
 import { AppDataSource } from './data-source';
 
@@ -30,6 +31,7 @@ app.use('/api/devices', deviceBulkRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/automation', automationRoutes);
+app.use('/api/applications', applicationRoutes);
 
 const PORT = process.env.PORT || 8080;
 
@@ -44,6 +46,7 @@ AppDataSource.initialize()
       console.log('- Advanced Search: /api/search');
       console.log('- Analytics: /api/analytics');
       console.log('- Automation: /api/automation');
+      console.log('- Applications: /api/applications');
     });
   })
   .catch((error) => console.error(error));

@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { Entity, PrimaryGeneratedColumn, Column, Index, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { User } from './User';
 import { Device } from './Device';
+import { Application } from './Application';
 
 export enum SchoolType {
   PRIMARY = 'primary',
@@ -82,6 +83,9 @@ export class School {
     @OneToMany(() => Device, (device) => device.school)
     devices!: Device[];
 
+    @OneToMany(() => Application, (application) => application.school)
+    applications!: Application[];
+
 
 
     @CreateDateColumn()
@@ -137,5 +141,26 @@ export class School {
 
     get districtCode(): string {
         return this.district.substring(0, 3).toUpperCase();
+    }
+
+    get applicationCount(): number {
+        return this.applications?.length || 0;
+    }
+
+    get pendingApplicationCount(): number {
+        return this.applications?.filter(app => app.isPending).length || 0;
+    }
+
+    get completedApplicationCount(): number {
+        return this.applications?.filter(app => app.isCompleted).length || 0;
+    }
+
+    get hasActiveApplications(): boolean {
+        return this.applications?.some(app => 
+            app.status === 'pending' || 
+            app.status === 'under_review' || 
+            app.status === 'approved' || 
+            app.status === 'in_progress'
+        ) || false;
     }
 }
