@@ -17,8 +17,23 @@ import { AppDataSource } from './data-source';
 dotenv.config();
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+
+// Enhanced CORS configuration for frontend integration
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    process.env.FRONTEND_URL || 'http://localhost:3000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+}));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Core routes
 app.use('/api/users', userRoutes);
@@ -35,18 +50,46 @@ app.use('/api/applications', applicationRoutes);
 
 const PORT = process.env.PORT || 8080;
 
+// Initialize database connection with better error handling
 AppDataSource.initialize()
   .then(() => {
+    console.log('✅ Database connection established successfully');
+    console.log(`Database: ${AppDataSource.options.database || 'Using connection URL'}`);
+    
     app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log('Available endpoints:');
-      console.log('- Device Management: /api/devices');
-      console.log('- School Management: /api/schools');
-      console.log('- User Management: /api/users');
-      console.log('- Advanced Search: /api/search');
-      console.log('- Analytics: /api/analytics');
-      console.log('- Automation: /api/automation');
-      console.log('- Applications: /api/applications');
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log('📋 Available endpoints:');
+      console.log('   - Device Management: /api/devices');
+      console.log('   - School Management: /api/schools');
+      console.log('   - User Management: /api/users');
+      console.log('   - Advanced Search: /api/search');
+      console.log('   - Analytics: /api/analytics');
+      console.log('   - Automation: /api/automation');
+      console.log('   - Applications: /api/applications');
     });
   })
-  .catch((error) => console.error(error));
+  .catch((error) => {
+    console.error('❌ Database connection failed:');
+    console.error('Error details:', error.message);
+    
+    if (error.message.includes('Tenant or user not found')) {
+      console.error('\n🔧 Troubleshooting tips for "Tenant or user not found":');
+      console.error('1. Check if your Supabase project is active');
+      console.error('2. Verify the database URL and credentials');
+      console.error('3. Ensure the database user has proper permissions');
+      console.error('4. Check if the connection string is properly URL-encoded');
+    }
+    
+    if (error.message.includes('timeout')) {
+      console.error('\n🔧 Connection timeout detected:');
+      console.error('1. Check your internet connection');
+      console.error('2. Verify Supabase service status');
+      console.error('3. Try increasing connection timeout');
+    }
+    
+    console.error('\n📞 Environment variables being used:');
+    console.error(`   DATABASE_URL: ${process.env.DATABASE_URL ? '[SET]' : '[NOT SET]'}`);
+    console.error(`   NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`);
+    
+    process.exit(1);
+  });

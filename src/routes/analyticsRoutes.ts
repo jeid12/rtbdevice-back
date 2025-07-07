@@ -1,13 +1,22 @@
 import { Router } from 'express';
 import analyticsController from '../controllers/analyticsController';
+import { authenticateJWT } from '../middleware/authenticateJWT';
 import { authorizeRoles } from '../middleware/authorizeRoles';
 import { UserRole } from '../entity/User';
 
 const router = Router();
 
+// Apply authentication middleware to all routes
+router.use(authenticateJWT);
+
 // Dashboard statistics
 router.get('/dashboard', 
     authorizeRoles(UserRole.ADMIN, UserRole.RTB_STAFF),
+    analyticsController.getDashboardStatistics
+);
+
+// General analytics - accessible to all authenticated users
+router.get('/', 
     analyticsController.getDashboardStatistics
 );
 
