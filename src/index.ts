@@ -18,13 +18,24 @@ dotenv.config();
 
 const app = express();
 
-// Enhanced CORS configuration for frontend integration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://rtbdevicemanagment.vercel.app'
+];
+
 app.use(cors({
-  origin: (origin, callback) => callback(null, origin), // Reflect origin
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -88,4 +99,3 @@ AppDataSource.initialize()
     process.exit(1);
   });
 
-  
