@@ -56,11 +56,30 @@ export const userService = {
     if (!user.otp || !user.otpExpiresAt || user.otp !== otp || user.otpExpiresAt < new Date()) {
       throw new Error('Invalid or expired OTP');
     }
+    
+    // Clear OTP and update last login
     user.otp = undefined;
     user.otpExpiresAt = undefined;
+    user.lastLoginAt = new Date();
     await userRepo.save(user);
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1d' });
-    return { token };
+    
+    // Generate token with full user context
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role 
+      }, 
+      JWT_SECRET, 
+      { expiresIn: '1d' }
+    );
+    
+    // Return token and full user data (excluding password)
+    const { password, ...userWithoutPassword } = user;
+    return { 
+      token, 
+      user: userWithoutPassword
+    };
   },
 
   forgotPassword: async ({ email }: { email: string }) => {

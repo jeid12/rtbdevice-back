@@ -20,13 +20,7 @@ const app = express();
 
 // Enhanced CORS configuration for frontend integration
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001',
-    process.env.FRONTEND_URL || 'http://localhost:3000'
-  ],
+  origin: (origin, callback) => callback(null, origin), // Reflect origin
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -93,3 +87,5 @@ AppDataSource.initialize()
     
     process.exit(1);
   });
+
+  
