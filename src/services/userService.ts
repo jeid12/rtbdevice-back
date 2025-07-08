@@ -3,6 +3,7 @@ import { User } from '../entity/User';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { sendOtpEmail } from './emailService';
+import { PaginationOptions, PaginatedResponse, validatePaginationOptions, createPaginatedResponse } from '../interfaces/pagination';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
@@ -55,11 +56,30 @@ export const userService = {
     if (!user.otp || !user.otpExpiresAt || user.otp !== otp || user.otpExpiresAt < new Date()) {
       throw new Error('Invalid or expired OTP');
     }
+    
+    // Clear OTP and update last login
     user.otp = undefined;
     user.otpExpiresAt = undefined;
+    user.lastLoginAt = new Date();
     await userRepo.save(user);
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1d' });
-    return { token };
+    
+    // Generate token with full user context
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role 
+      }, 
+      JWT_SECRET, 
+      { expiresIn: '1d' }
+    );
+    
+    // Return token and full user data (excluding password)
+    const { password, ...userWithoutPassword } = user;
+    return { 
+      token, 
+      user: userWithoutPassword
+    };
   },
 
   forgotPassword: async ({ email }: { email: string }) => {
@@ -99,9 +119,26 @@ export const userService = {
     return { message: 'Password reset successful.' };
   },
 
-  getAll: async () => {
+  getAll: async (paginationOptions?: PaginationOptions): Promise<PaginatedResponse<User>> => {
     const userRepo = AppDataSource.getRepository(User);
-    return userRepo.find();
+    const validatedPagination = validatePaginationOptions(paginationOptions || {});
+    const { page, limit, sortBy, sortOrder } = validatedPagination;
+
+    const queryBuilder = userRepo
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.school', 'school');
+
+    // Get total count before applying pagination
+    const total = await queryBuilder.getCount();
+
+    // Apply sorting and pagination
+    const results = await queryBuilder
+      .orderBy(`user.${sortBy}`, sortOrder)
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    return createPaginatedResponse(results, total, page, limit);
   },
 
   getById: async (id: number) => {
